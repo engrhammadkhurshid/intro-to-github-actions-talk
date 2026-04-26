@@ -12,13 +12,15 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    permissions:
+      checks: write
     steps:
     - uses: actions/checkout@v4
       
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 6.0.x
+        dotnet-version: 8.0.x
     
     - name: Install dependencies
       run: dotnet restore "${{ github.workspace }}/mywebapp/mywebapp.sln"
@@ -73,8 +75,8 @@ jobs:
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 6.0.x
-    
+        dotnet-version: 8.0.x
+
     - name: 'Login via Azure CLI'
       uses: azure/login@v1
       with:
@@ -114,7 +116,7 @@ jobs:
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 6.0.x
+        dotnet-version: 8.0.x
     
     - name: 'Login via Azure CLI'
       uses: azure/login@v1
@@ -126,8 +128,8 @@ jobs:
       with:
         name: 'mywebappbuildartifacts'
         path: 'mywebappbuildartifacts'
-   
-    - name: 'Run Azure webapp deploy action using Service Principal credentials'
+
+  - name: 'Run Azure webapp deploy action using Service Principal credentials'
       uses: azure/webapps-deploy@v2
       with: 
         app-name: 'ASE-537861' # Updated with your actual Web App name
@@ -153,7 +155,7 @@ jobs:
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 6.0.x
+        dotnet-version: 8.0.x
     
     - name: 'Login via Azure CLI'
       uses: azure/login@v1
