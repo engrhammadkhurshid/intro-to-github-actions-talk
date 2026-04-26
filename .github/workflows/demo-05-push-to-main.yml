@@ -13,12 +13,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       
-    - name: Setup .NET Core 5
-      uses: actions/setup-dotnet@v1
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 5.0.x
+        dotnet-version: 6.0.x
     
     - name: Install dependencies
       run: dotnet restore "${{ github.workspace }}/mywebapp/mywebapp.sln"
@@ -31,7 +31,7 @@ jobs:
         dotnet test "${{ github.workspace }}/mywebapp/mywebapp.sln" --no-restore --verbosity normal  --logger "trx;LogFileName=test-results.trx"
 
     - name: Test Report
-      uses: dorny/test-reporter@v1.5.0
+      uses: dorny/test-reporter@v1.6.0
       if: success() || failure()    # run this step even if previous step failed
       with:
         name: XUnit Tests            # Name of the check run which will be created
@@ -68,12 +68,12 @@ jobs:
       url: 'https://mywebapp-actions-dev.azurewebsites.net'
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       
-    - name: Setup .NET Core 5
-      uses: actions/setup-dotnet@v1
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 5.0.x
+        dotnet-version: 6.0.x
     
     - name: 'Login via Azure CLI'
       uses: azure/login@v1
@@ -81,7 +81,7 @@ jobs:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
     
     - name: Download a Build Artifact
-      uses: actions/download-artifact@v2.0.8
+      uses: actions/download-artifact@v4
       with:
         # Artifact name
         name: 'mywebappbuildartifacts'
@@ -89,13 +89,13 @@ jobs:
         path: 'mywebappbuildartifacts'
    
     # Deploy to Azure Web apps
-    - name: 'Run Azure webapp deploy action using publish profile credentials'
+    - name: 'Run Azure webapp deploy action using Service Principal credentials'
       uses: azure/webapps-deploy@v2
       with: 
-        app-name: mywebapp-actions # Replace with your app name
-        package: 'mywebappbuildartifacts'
-        slot-name: 'dev'   
-        
+        app-name: 'ASE-537861' # Updated with your actual Web App name
+        package: 'mywebappbuildartifacts' # This should be the path to the published artifact
+        slot-name: 'production' # Assuming you are deploying to the production slot of your single web app for now
+
   deploy-QA:
     name: "Deploy To Azure QA env"
 
@@ -109,12 +109,12 @@ jobs:
       url: 'https://mywebapp-actions-qa.azurewebsites.net'
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       
-    - name: Setup .NET Core 5
-      uses: actions/setup-dotnet@v1
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 5.0.x
+        dotnet-version: 6.0.x
     
     - name: 'Login via Azure CLI'
       uses: azure/login@v1
@@ -122,41 +122,38 @@ jobs:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
     
     - name: Download a Build Artifact
-      uses: actions/download-artifact@v2.0.8
+      uses: actions/download-artifact@v4
       with:
-        # Artifact name
         name: 'mywebappbuildartifacts'
-        # Destination path
         path: 'mywebappbuildartifacts'
    
-    # Deploy to Azure Web apps
-    - name: 'Run Azure webapp deploy action using publish profile credentials'
+    - name: 'Run Azure webapp deploy action using Service Principal credentials'
       uses: azure/webapps-deploy@v2
       with: 
-        app-name: mywebapp-actions # Replace with your app name
+        app-name: 'ASE-537861' # Updated with your actual Web App name
         package: 'mywebappbuildartifacts'
-        slot-name: 'qa'   
-        
+        slot-name: 'production' # Assuming you are deploying to the production slot of your single web app for now
+
   deploy-PROD:
     name: "Deploy To Azure PROD env"
 
     runs-on: ubuntu-latest
     
     needs:
-      - deploy-DEV
-      - deploy-QA
+      - deploy-DEV # Assuming PROD depends on DEV for a simple sequential deployment
+      - deploy-QA # Assuming PROD depends on QA as well
     
     environment:
       name: 'DEMO05_PROD'
       url: 'https://mywebapp-actions.azurewebsites.net'
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       
-    - name: Setup .NET Core 5
-      uses: actions/setup-dotnet@v1
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 5.0.x
+        dotnet-version: 6.0.x
     
     - name: 'Login via Azure CLI'
       uses: azure/login@v1
@@ -164,16 +161,14 @@ jobs:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
     
     - name: Download a Build Artifact
-      uses: actions/download-artifact@v2.0.8
+      uses: actions/download-artifact@v4
       with:
-        # Artifact name
         name: 'mywebappbuildartifacts'
-        # Destination path
         path: 'mywebappbuildartifacts'
    
-    # Deploy to Azure Web apps
-    - name: 'Run Azure webapp deploy action using publish profile credentials'
+    - name: 'Run Azure webapp deploy action using Service Principal credentials'
       uses: azure/webapps-deploy@v2
       with: 
-        app-name: mywebapp-actions # Replace with your app name
+        app-name: 'ASE-537861' # Updated with your actual Web App name
         package: 'mywebappbuildartifacts'
+        slot-name: 'production' # Assuming you are deploying to the production slot of your single web app for now
