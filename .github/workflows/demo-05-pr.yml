@@ -30,7 +30,7 @@ jobs:
     
     - name: Test
       run: |
-        dotnet test "${{ github.workspace }}/mywebapp/mywebapp.sln" --no-restore --verbosity normal  --logger "trx;LogFileName=test-results.trx"
+        dotnet test "${{ github.workspace }}/mywebapp/mywebapp.sln" --no-restore --verbosity normal --logger "trx;LogFileName=test-results.trx" --results-directory "${{ github.workspace }}/mywebapp/tests/TestResults"
 
     - name: Test Report
       uses: dorny/test-reporter@v1.6.0
