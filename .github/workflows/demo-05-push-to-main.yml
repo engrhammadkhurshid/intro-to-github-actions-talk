@@ -5,20 +5,17 @@ on:
   push:
     branches: 
       - main
-  
+
 jobs:
   build-app:
     name: "Build App"
-
     runs-on: ubuntu-latest
 
-    permissions:
-      checks: write
     steps:
     - uses: actions/checkout@v4
       
-    - name: Setup .NET Core
-      uses: actions/setup-dotnet@v3
+    - name: Setup .NET 8
+      uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
     
@@ -30,96 +27,67 @@ jobs:
     
     - name: Test
       run: |
-        dotnet test "${{ github.workspace }}/mywebapp/mywebapp.sln" --no-restore --verbosity normal --logger "trx;LogFileName=test-results.trx" --results-directory "${{ github.workspace }}/mywebapp/tests/TestResults"
+        dotnet test "${{ github.workspace }}/mywebapp/mywebapp.sln" --no-restore --verbosity normal --logger "trx;LogFileName=test-results.trx"
 
     - name: Test Report
-      uses: dorny/test-reporter@v1.6.0
-      if: success() || failure()    # run this step even if previous step failed
+      uses: dorny/test-reporter@v1.9.1
+      if: success() || failure()
       with:
-        name: XUnit Tests            # Name of the check run which will be created
-        path: ${{ github.workspace }}/mywebapp/tests/TestResults/*.trx    # Path to test results
+        name: XUnit Tests
+        path: "**/test-results.trx"
         reporter: dotnet-trx
       
     - name: Publish
-      run: |
-        dotnet publish "${{ github.workspace }}/mywebapp/src/mywebapp.csproj" -c Release -o mywebapp
+      # We publish to a guaranteed absolute path called 'final_output'
+      run: dotnet publish "${{ github.workspace }}/mywebapp/src/mywebapp.csproj" -c Release -o "${{ github.workspace }}/final_output"
     
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v4
       with:
-        # Artifact name
         name: mywebappbuildartifacts
-        # A file, directory or wildcard pattern that describes what to upload
-        path: mywebapp/**
-        # The desired behavior if no files are found using the provided path.
+        # This MUST match the -o path above exactly
+        path: "${{ github.workspace }}/final_output/"
         if-no-files-found: error
-        # Duration after which artifact will expire in days. 0 means using default retention.
-        retention-days: 90
-
+        retention-days: 7
 
   deploy-DEV:
     name: "Deploy To Azure DEV env"
-
     runs-on: ubuntu-latest
-    
-    needs:
-      - build-app
-    
+    needs: build-app
     environment:
       name: 'DEMO05_DEV'
-      url: 'https://mywebapp-actions-dev.azurewebsites.net'
+      url: 'https://mywebapp-maaz-dev-a2fxbybkgmhhd9hy.southeastasia-01.azurewebsites.net'
 
     steps:
-    - uses: actions/checkout@v4
-      
-    - name: Setup .NET Core
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: 8.0.x
-
     - name: 'Login via Azure CLI'
-      uses: azure/login@v1
+      uses: azure/login@v2
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
     
     - name: Download a Build Artifact
       uses: actions/download-artifact@v4
       with:
-        # Artifact name
         name: 'mywebappbuildartifacts'
-        # Destination path
-        path: 'mywebappbuildartifacts'
+        path: 'publish_temp'
    
-    # Deploy to Azure Web apps
-    - name: 'Run Azure webapp deploy action using Service Principal credentials'
-      uses: azure/webapps-deploy@v2
+    - name: 'Run Azure webapp deploy'
+      uses: azure/webapps-deploy@v3
       with: 
-        app-name: 'ASE-537861' # Updated with your actual Web App name
-        package: 'mywebappbuildartifacts' # This should be the path to the published artifact
-        slot-name: 'production' # Assuming you are deploying to the production slot of your single web app for now
-
+        app-name: 'mywebapp-maaz'
+        slot-name: 'dev'
+        package: 'publish_temp'
+        
   deploy-QA:
     name: "Deploy To Azure QA env"
-
     runs-on: ubuntu-latest
-    
-    needs:
-      - build-app
-    
+    needs: build-app
     environment:
       name: 'DEMO05_QA'
-      url: 'https://mywebapp-actions-qa.azurewebsites.net'
+      url: 'https://mywebapp-maaz-qa-f6azd0eefncpazcf.southeastasia-01.azurewebsites.net'
 
     steps:
-    - uses: actions/checkout@v4
-      
-    - name: Setup .NET Core
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: 8.0.x
-    
     - name: 'Login via Azure CLI'
-      uses: azure/login@v1
+      uses: azure/login@v2
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
     
@@ -127,38 +95,26 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: 'mywebappbuildartifacts'
-        path: 'mywebappbuildartifacts'
-
-    - name: 'Run Azure webapp deploy action using Service Principal credentials'
-      uses: azure/webapps-deploy@v2
+        path: 'publish_temp'
+   
+    - name: 'Run Azure webapp deploy'
+      uses: azure/webapps-deploy@v3
       with: 
-        app-name: 'ASE-537861' # Updated with your actual Web App name
-        package: 'mywebappbuildartifacts'
-        slot-name: 'production' # Assuming you are deploying to the production slot of your single web app for now
-
+        app-name: 'mywebapp-maaz'
+        slot-name: 'qa'
+        package: 'publish_temp'
+        
   deploy-PROD:
     name: "Deploy To Azure PROD env"
-
     runs-on: ubuntu-latest
-    
-    needs:
-      - deploy-DEV # Assuming PROD depends on DEV for a simple sequential deployment
-      - deploy-QA # Assuming PROD depends on QA as well
-    
+    needs: [deploy-DEV, deploy-QA]
     environment:
       name: 'DEMO05_PROD'
-      url: 'https://mywebapp-actions.azurewebsites.net'
+      url: 'https://mywebapp-maaz-gva7g0a7b3hxdwht.southeastasia-01.azurewebsites.net'
 
     steps:
-    - uses: actions/checkout@v4
-      
-    - name: Setup .NET Core
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: 8.0.x
-    
     - name: 'Login via Azure CLI'
-      uses: azure/login@v1
+      uses: azure/login@v2
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
     
@@ -166,11 +122,10 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: 'mywebappbuildartifacts'
-        path: 'mywebappbuildartifacts'
+        path: 'publish_temp'
    
-    - name: 'Run Azure webapp deploy action using Service Principal credentials'
-      uses: azure/webapps-deploy@v2
+    - name: 'Run Azure webapp deploy'
+      uses: azure/webapps-deploy@v3
       with: 
-        app-name: 'ASE-537861' # Updated with your actual Web App name
-        package: 'mywebappbuildartifacts'
-        slot-name: 'production' # Assuming you are deploying to the production slot of your single web app for now
+        app-name: 'mywebapp-maaz'
+        package: 'publish_temp'
