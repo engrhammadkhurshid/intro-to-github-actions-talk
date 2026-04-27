@@ -38,94 +38,92 @@ jobs:
         reporter: dotnet-trx
       
     - name: Publish
-      # We publish to a guaranteed absolute path called 'final_output'
       run: dotnet publish "${{ github.workspace }}/mywebapp/src/mywebapp.csproj" -c Release -o "${{ github.workspace }}/final_output"
     
-    - name: Upload a Build Artifact
+    - name: Upload Build Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: mywebappbuildartifacts
-        # This MUST match the -o path above exactly
+        name: ase-build-artifacts
         path: "${{ github.workspace }}/final_output/"
         if-no-files-found: error
         retention-days: 7
 
   deploy-DEV:
-    name: "Deploy To Azure DEV env"
+    name: "Deploy To DEV"
     runs-on: ubuntu-latest
     needs: build-app
     environment:
-      name: 'DEMO05_DEV'
-      url: 'https://mywebapp-maaz-dev-a2fxbybkgmhhd9hy.southeastasia-01.azurewebsites.net'
+      name: 'DEV'
+      url: 'https://ase-537861-dev-hrbwb7g2f4dvbye5.uaenorth-01.azurewebsites.net'
 
     steps:
-    - name: 'Login via Azure CLI'
+    - name: Azure Login
       uses: azure/login@v2
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
     
-    - name: Download a Build Artifact
+    - name: Download Artifact
       uses: actions/download-artifact@v4
       with:
-        name: 'mywebappbuildartifacts'
+        name: 'ase-build-artifacts'
         path: 'publish_temp'
    
-    - name: 'Run Azure webapp deploy'
+    - name: Deploy to Azure Web App (DEV)
       uses: azure/webapps-deploy@v3
       with: 
-        app-name: 'mywebapp-maaz'
+        app-name: 'ase-537861'
         slot-name: 'dev'
         package: 'publish_temp'
-        
+
   deploy-QA:
-    name: "Deploy To Azure QA env"
+    name: "Deploy To QA"
     runs-on: ubuntu-latest
     needs: build-app
     environment:
-      name: 'DEMO05_QA'
-      url: 'https://mywebapp-maaz-qa-f6azd0eefncpazcf.southeastasia-01.azurewebsites.net'
+      name: 'QA'
+      url: 'https://ase-537861-qa-cca4h5drd6g8h3cr.uaenorth-01.azurewebsites.net'
 
     steps:
-    - name: 'Login via Azure CLI'
+    - name: Azure Login
       uses: azure/login@v2
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
     
-    - name: Download a Build Artifact
+    - name: Download Artifact
       uses: actions/download-artifact@v4
       with:
-        name: 'mywebappbuildartifacts'
+        name: 'ase-build-artifacts'
         path: 'publish_temp'
    
-    - name: 'Run Azure webapp deploy'
+    - name: Deploy to Azure Web App (QA)
       uses: azure/webapps-deploy@v3
       with: 
-        app-name: 'mywebapp-maaz'
+        app-name: 'ase-537861'
         slot-name: 'qa'
         package: 'publish_temp'
-        
+
   deploy-PROD:
-    name: "Deploy To Azure PROD env"
+    name: "Deploy To PROD"
     runs-on: ubuntu-latest
     needs: [deploy-DEV, deploy-QA]
     environment:
-      name: 'DEMO05_PROD'
-      url: 'https://mywebapp-maaz-gva7g0a7b3hxdwht.southeastasia-01.azurewebsites.net'
+      name: 'PROD'
+      url: 'https://ase-537861-djabbggzg3f4fge7.uaenorth-01.azurewebsites.net'
 
     steps:
-    - name: 'Login via Azure CLI'
+    - name: Azure Login
       uses: azure/login@v2
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
     
-    - name: Download a Build Artifact
+    - name: Download Artifact
       uses: actions/download-artifact@v4
       with:
-        name: 'mywebappbuildartifacts'
+        name: 'ase-build-artifacts'
         path: 'publish_temp'
    
-    - name: 'Run Azure webapp deploy'
+    - name: Deploy to Azure Web App (PROD)
       uses: azure/webapps-deploy@v3
       with: 
-        app-name: 'mywebapp-maaz'
+        app-name: 'ase-537861'
         package: 'publish_temp'
